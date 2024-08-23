@@ -1,6 +1,7 @@
 package com.mindex.challenge.service.impl;
 
 import com.mindex.challenge.data.Employee;
+import com.mindex.challenge.data.ReportingStructure;
 import com.mindex.challenge.service.EmployeeService;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,6 +16,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.Collections;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -24,6 +26,7 @@ public class EmployeeServiceImplTest {
 
     private String employeeUrl;
     private String employeeIdUrl;
+    private String reportingUrl;
 
     @Autowired
     private EmployeeService employeeService;
@@ -38,6 +41,7 @@ public class EmployeeServiceImplTest {
     public void setup() {
         employeeUrl = "http://localhost:" + port + "/employee";
         employeeIdUrl = "http://localhost:" + port + "/employee/{id}";
+        reportingUrl = "http://localhost:" + port + "/reporting/{id}";
     }
 
     @Test
@@ -75,6 +79,33 @@ public class EmployeeServiceImplTest {
                         readEmployee.getEmployeeId()).getBody();
 
         assertEmployeeEquivalence(readEmployee, updatedEmployee);
+    }
+
+    @Test
+    public void testReportingStructure() {
+        Employee testEmployeePrimary = new Employee();
+        testEmployeePrimary.setFirstName("John");
+
+        Employee testEmployeeSecondary = new Employee();
+        testEmployeeSecondary.setFirstName("Paul");
+
+        Employee testEmployeeTertiary = new Employee();
+        testEmployeeTertiary.setFirstName("George");
+        Employee createdEmployeeTertiary = restTemplate.postForEntity(employeeUrl, testEmployeeTertiary, Employee.class).getBody();
+
+        // Set secondary employee's direct report to newly created tertiary employee and post
+        testEmployeeSecondary.setDirectReports(
+                Collections.singletonList(createdEmployeeTertiary));
+        Employee createdEmployeeSecondary = restTemplate.postForEntity(employeeUrl, testEmployeeSecondary, Employee.class).getBody();
+
+        // Set primary employee's direct report to newly created secondary employee and post
+        testEmployeePrimary.setDirectReports(
+                Collections.singletonList(createdEmployeeSecondary));
+        Employee createdEmployeePrimary = restTemplate.postForEntity(employeeUrl, testEmployeePrimary, Employee.class).getBody();
+
+        // Read ReportingStructure for primary employee
+        ReportingStructure readStructure = restTemplate.getForEntity(reportingUrl, ReportingStructure.class, createdEmployeePrimary.getEmployeeId()).getBody();
+        assertEquals(readStructure.getNumberOfReports(), 2);
     }
 
     private static void assertEmployeeEquivalence(Employee expected, Employee actual) {
