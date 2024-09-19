@@ -4,10 +4,15 @@ import com.mindex.challenge.dao.EmployeeRepository;
 import com.mindex.challenge.data.Employee;
 import com.mindex.challenge.data.ReportingStructure;
 import com.mindex.challenge.service.EmployeeService;
+import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,6 +20,7 @@ import java.util.UUID;
 public class EmployeeServiceImpl implements EmployeeService {
 
     private static final Logger LOG = LoggerFactory.getLogger(EmployeeServiceImpl.class);
+    private List<String> visitedEmployees;
 
     @Autowired
     private EmployeeRepository employeeRepository;
@@ -36,7 +42,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee employee = employeeRepository.findByEmployeeId(id);
 
         if (employee == null) {
-            throw new RuntimeException("Invalid employeeId: " + id);
+            throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "Invalid employeeId: " + id);
         }
 
         return employee;
@@ -53,6 +59,8 @@ public class EmployeeServiceImpl implements EmployeeService {
     public ReportingStructure readReportingStructure(String id) {
         LOG.debug("Reading reporting structure for employee with id [{}]", id);
 
+        visitedEmployees = new ArrayList<>();
+
         Employee employee = read(id);
 
         return new ReportingStructure(employee, getReportsCount(employee));
@@ -63,8 +71,23 @@ public class EmployeeServiceImpl implements EmployeeService {
     private int getReportsCount(Employee employee){
         List<Employee> directReports;
 
+        // Check if employee has already been visited (cycle detection)
+        if (visitedEmployees.contains(employee.getEmployeeId())) {
+            throw new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Cycle in reporting structure detected. Please re-evaluate.");
+        }
+        else {
+            visitedEmployees.add(employee.getEmployeeId());
+        }
+
         // Re-read employee if details not populated (typical for reportees)
-        if (employee.getFirstName() == null) {
+        if (employee.getEmployeeId() != null &&
+                ObjectUtils.allNull(
+                    employee.getFirstName(),
+                    employee.getLastName(),
+                    employee.getDirectReports(),
+                    employee.getDepartment(),
+                    employee.getPosition())) {
             directReports = read(employee.getEmployeeId())
                     .getDirectReports();
         } else {

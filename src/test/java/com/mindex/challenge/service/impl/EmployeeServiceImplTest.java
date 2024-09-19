@@ -74,7 +74,7 @@ public class EmployeeServiceImplTest {
         Employee updatedEmployee =
                 restTemplate.exchange(employeeIdUrl,
                         HttpMethod.PUT,
-                        new HttpEntity<Employee>(readEmployee, headers),
+                        new HttpEntity<>(readEmployee, headers),
                         Employee.class,
                         readEmployee.getEmployeeId()).getBody();
 
