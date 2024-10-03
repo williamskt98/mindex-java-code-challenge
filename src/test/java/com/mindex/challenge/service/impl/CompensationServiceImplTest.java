@@ -12,6 +12,8 @@ import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.junit.Assert.assertEquals;
@@ -68,7 +70,7 @@ public class CompensationServiceImplTest {
         // Create compensation using newly created employee id
         Compensation testCompensation = new Compensation(
                 employeeId,
-                75000,
+                new BigDecimal(75000),
                 LocalDate.of(2023,1,1));
         Compensation createdCompensation = restTemplate.postForEntity(compensationCreateUrl, testCompensation, Compensation.class).getBody();
 
