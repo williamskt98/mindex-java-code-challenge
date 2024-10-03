@@ -41,13 +41,14 @@ public class CompensationServiceImpl implements CompensationService {
     public Compensation read(String id) {
         LOG.debug("Reading compensation with id [{}]", id);
 
-        // Fetch Compensation using Employee object's Employee ID
-        Compensation compensation = compensationRepository.findByEmployee(id);
-
         if (employeeRepository.findByEmployeeId(id) == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "Employee with id: " + id + " does not exist.");
         }
+
+        // Fetch Compensation using Employee object's Employee ID
+        Compensation compensation = compensationRepository.findByEmployee(id);
+
         if (compensation == null) {
             throw new ResponseStatusException(HttpStatus.NO_CONTENT,
                     "No compensation found for employee with id: " + id + ".");
