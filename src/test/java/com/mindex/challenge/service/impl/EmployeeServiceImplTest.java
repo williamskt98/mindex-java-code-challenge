@@ -79,6 +79,34 @@ public class EmployeeServiceImplTest {
     }
 
     @Test
+    public void testReportingStructure() {
+        Employee testEmployeePrimary = new Employee();
+        testEmployeePrimary.setFirstName("John");
+
+        Employee testEmployeeSecondary = new Employee();
+        testEmployeeSecondary.setFirstName("Paul");
+
+        Employee testEmployeeTertiary = new Employee();
+        testEmployeeTertiary.setFirstName("George");
+        Employee createdEmployeeTertiary = restTemplate.postForEntity(employeeUrl, testEmployeeTertiary, Employee.class).getBody();
+
+        // Set secondary employee's direct report to newly created tertiary employee and post
+        testEmployeeSecondary.setDirectReports(
+                Collections.singletonList(createdEmployeeTertiary));
+        Employee createdEmployeeSecondary = restTemplate.postForEntity(employeeUrl, testEmployeeSecondary, Employee.class).getBody();
+
+        // Set primary employee's direct report to newly created secondary employee and post
+        testEmployeePrimary.setDirectReports(
+                Collections.singletonList(createdEmployeeSecondary));
+        Employee createdEmployeePrimary = restTemplate.postForEntity(employeeUrl, testEmployeePrimary, Employee.class).getBody();
+
+        // Read ReportingStructure for primary employee
+        ReportingStructure readStructure = restTemplate.getForEntity(reportingUrl, ReportingStructure.class, createdEmployeePrimary.getEmployeeId()).getBody();
+        assertEmployeeEquivalence(readStructure.getEmployee(), createdEmployeePrimary);
+        assertEquals(readStructure.getNumberOfReports(), 2);
+    }
+
+    @Test
     public void testFailWhenReportingCycle() {
         Employee testEmployeePrimary = new Employee();
         testEmployeePrimary.setFirstName("John");
@@ -114,34 +142,6 @@ public class EmployeeServiceImplTest {
                 restTemplate.getForEntity(
                         reportingUrl, ReportingStructure.class, createdEmployeePrimary.getEmployeeId())
                         .getStatusCode());
-    }
-
-    @Test
-    public void testReportingStructure() {
-        Employee testEmployeePrimary = new Employee();
-        testEmployeePrimary.setFirstName("John");
-
-        Employee testEmployeeSecondary = new Employee();
-        testEmployeeSecondary.setFirstName("Paul");
-
-        Employee testEmployeeTertiary = new Employee();
-        testEmployeeTertiary.setFirstName("George");
-        Employee createdEmployeeTertiary = restTemplate.postForEntity(employeeUrl, testEmployeeTertiary, Employee.class).getBody();
-
-        // Set secondary employee's direct report to newly created tertiary employee and post
-        testEmployeeSecondary.setDirectReports(
-                Collections.singletonList(createdEmployeeTertiary));
-        Employee createdEmployeeSecondary = restTemplate.postForEntity(employeeUrl, testEmployeeSecondary, Employee.class).getBody();
-
-        // Set primary employee's direct report to newly created secondary employee and post
-        testEmployeePrimary.setDirectReports(
-                Collections.singletonList(createdEmployeeSecondary));
-        Employee createdEmployeePrimary = restTemplate.postForEntity(employeeUrl, testEmployeePrimary, Employee.class).getBody();
-
-        // Read ReportingStructure for primary employee
-        ReportingStructure readStructure = restTemplate.getForEntity(reportingUrl, ReportingStructure.class, createdEmployeePrimary.getEmployeeId()).getBody();
-        assertEmployeeEquivalence(readStructure.getEmployee(), createdEmployeePrimary);
-        assertEquals(readStructure.getNumberOfReports(), 2);
     }
 
     private static void assertEmployeeEquivalence(Employee expected, Employee actual) {
