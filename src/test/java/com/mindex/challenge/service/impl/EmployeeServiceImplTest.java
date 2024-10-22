@@ -10,10 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Collections;
@@ -82,6 +79,44 @@ public class EmployeeServiceImplTest {
     }
 
     @Test
+    public void testFailWhenReportingCycle() {
+        Employee testEmployeePrimary = new Employee();
+        testEmployeePrimary.setFirstName("John");
+
+        Employee testEmployeeSecondary = new Employee();
+        testEmployeeSecondary.setFirstName("Paul");
+
+        Employee createdEmployeePrimary = restTemplate.postForEntity(employeeUrl, testEmployeePrimary, Employee.class).getBody();
+
+        // Set secondary employee's direct report to primary employee and post
+        testEmployeeSecondary.setDirectReports(
+                Collections.singletonList(createdEmployeePrimary));
+        Employee createdEmployeeSecondary = restTemplate.postForEntity(employeeUrl, testEmployeeSecondary, Employee.class).getBody();
+
+        // Set primary employee's direct report to secondary employee and post
+        createdEmployeePrimary.setDirectReports(
+                Collections.singletonList(createdEmployeeSecondary));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // Update primary employee's direct reports
+        Employee updatedPrimaryEmployee =
+                restTemplate.exchange(employeeIdUrl,
+                        HttpMethod.PUT,
+                        new HttpEntity<>(createdEmployeePrimary, headers),
+                        Employee.class,
+                        createdEmployeePrimary.getEmployeeId()).getBody();
+
+        // Check that returned status code is 500
+        assertEquals(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                restTemplate.getForEntity(
+                        reportingUrl, ReportingStructure.class, createdEmployeePrimary.getEmployeeId())
+                        .getStatusCode());
+    }
+
+    @Test
     public void testReportingStructure() {
         Employee testEmployeePrimary = new Employee();
         testEmployeePrimary.setFirstName("John");
@@ -105,6 +140,7 @@ public class EmployeeServiceImplTest {
 
         // Read ReportingStructure for primary employee
         ReportingStructure readStructure = restTemplate.getForEntity(reportingUrl, ReportingStructure.class, createdEmployeePrimary.getEmployeeId()).getBody();
+        assertEmployeeEquivalence(readStructure.getEmployee(), createdEmployeePrimary);
         assertEquals(readStructure.getNumberOfReports(), 2);
     }
 
