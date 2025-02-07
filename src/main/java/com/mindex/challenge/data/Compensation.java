@@ -4,24 +4,24 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class Compensation {
-    private String employee;
+    private Employee employee;
     private BigDecimal salary;
     private LocalDate effectiveDate;
 
     public Compensation() {
     }
 
-    public Compensation(String employee, BigDecimal salary, LocalDate effectiveDate) {
+    public Compensation(Employee employee, BigDecimal salary, LocalDate effectiveDate) {
         this.employee = employee;
         this.salary = salary;
         this.effectiveDate = effectiveDate;
     }
 
-    public String getEmployee() {
+    public Employee getEmployee() {
         return employee;
     }
 
-    public void setEmployee(String employee) {
+    public void setEmployee(Employee employee) {
         this.employee = employee;
     }
 

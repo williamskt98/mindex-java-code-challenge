@@ -26,13 +26,14 @@ public class CompensationServiceImpl implements CompensationService {
     public Compensation create(Compensation compensation) {
         LOG.debug("Creating compensation [{}]", compensation);
 
-        if (employeeRepository.findByEmployeeId(compensation.getEmployee()) != null) {
+        // Check if defined employee exists in repository
+        if (employeeRepository.findByEmployeeId(compensation.getEmployee().getEmployeeId()) != null) {
             compensationRepository.insert(compensation);
             return compensation;
         }
         else {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Employee with id: " + compensation.getEmployee() + " does not exist.");
+                    "Employee with id: " + compensation.getEmployee().getEmployeeId() + " does not exist.");
         }
 
     }
@@ -46,8 +47,10 @@ public class CompensationServiceImpl implements CompensationService {
                     "Employee with id: " + id + " does not exist.");
         }
 
+        LOG.debug("Employee with Id does exist");
+
         // Fetch Compensation using Employee object's Employee ID
-        Compensation compensation = compensationRepository.findByEmployee(id);
+        Compensation compensation = compensationRepository.findByEmployeeEmployeeId(id);
 
         if (compensation == null) {
             throw new ResponseStatusException(HttpStatus.NO_CONTENT,

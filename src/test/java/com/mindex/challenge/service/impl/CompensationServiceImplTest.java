@@ -69,7 +69,7 @@ public class CompensationServiceImplTest {
     public void testCreateRead() {
         // Create compensation using newly created employee id
         Compensation testCompensation = new Compensation(
-                employeeId,
+                createdEmployee,
                 new BigDecimal(75000),
                 LocalDate.of(2023,1,1));
         Compensation createdCompensation = restTemplate.postForEntity(compensationCreateUrl, testCompensation, Compensation.class).getBody();
